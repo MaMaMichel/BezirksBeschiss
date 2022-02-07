@@ -1,6 +1,7 @@
 library(bslib)
 library(tidyverse)
 library(thematic)
+library(sf)
 
 CombinedData <- read_csv('data/CombinedData.csv')
 DistrictOutlines <- st_read("data/BEZIRKSGRENZEOGDPolygon.shp")
@@ -32,18 +33,22 @@ ui <- fluidPage(
                 sidebarPanel(
                   h3("Warum ist mein Bezirk so beschissen?"),
                   p("\"Wenngleich in anderen Regionen dieses wunderschönen Landes die Schneeschmelze das langsame Erwachen des Frühlings einläutet, so offenbart sich auf manchen Straßen und Plätzen Wiens ein anderes Bild. Über den Winter arbeiteten emsigst die Hunde der Stadt unter dem wachsamen Auge ihrer Besitzer:innen. Wie der Feldhamster der sich auf schlechtere Zeiten vorbereitet schissen sie tunlichst unter die schlammgraue Wiener Schneesuppe. Und so erscheinen sie, die halbzersetzten Häufchen, wie längst verloren geglaubte Artefakte aus dem Permafrost der Sibirischen Tundra und verwandeln die Stadt in ein Minenfeld faul riechender Irritation.\" - Hans Kelsen, 1919"),
-                  p("Dieses Interaktive Dashbaord soll den doch teils unterschiedlich ausfallenden #BezirksBeschiss in Wien für die Bürger:innen des Landes erfahrbar machen. Viel Spaß!"),
+                  p("Dieses Dashbaord soll den doch teils unterschiedlich ausfallenden #BezirksBeschiss in Wien für die Bürger:innen des Landes erfahrbar machen. Viel Spaß!"),
                   
                 ),
-                mainPanel(plotOutput("map", width = "auto", height = "800px"))
+                mainPanel( h3("Beschiss-Score pro Bezirk:"),
+                           p("Der Score errechnet sich aus der Anzahl der Sackerlspender pro Hund und dem prozentuellen Grünflächenanteil der Bezirke."),
+                           plotOutput("map", width = "auto", height = "800px"))
               )
     ),
     tabPanel("Scatter Plot", 
              sidebarLayout(
                sidebarPanel(
                  h3("Warum ist mein Bezirk so beschissen?"),
-                 p("\"Wenngleich in anderen Regionen dieses wunderschönen Landes die Schneeschmelze das langsame Erwachen des Frühlings einläutet, so offenbart sich auf manchen Straßen und Plätzen Wiens ein anderes Bild. Über den Winter arbeiteten emsigst die Hunde der Stadt unter dem wachsamen Auge ihrer Besitzer:innen. Wie der Feldhamster der sich auf schlechtere Zeiten vorbereitet schissen sie tunlichst unter die schlammgraue Wiener Schneesuppe. Und so erscheinen sie, die halbzersetzten Häufchen, wie längst verloren geglaubte Artefakte aus dem Permafrost der Sibirischen Tundra und verwandeln die Stadt in ein Minenfeld faul riechender Irritation.\" - Hans Kelsen, 1919"),
-                 p("Dieses Interaktive Dashbaord soll den doch teils unterschiedlich ausfallenden #BezirksBeschiss in Wien für die Bürger:innen des Landes erfahrbar machen. Viel Spaß!"),
+                 p("Zur näheren Betrachtung der Sachlage kann diese Grafik herangezogen werden:"),
+                 p("Auf der X- und Y-Achse befinden sich die beiden Komponenten des berechneten Beschiss-Score, Farbe signalisiert den berechneten Wert. Für die Größe der Punkte ist die Hundedichte eines Bezirkes ausschlaggebend. Die Hundedichte ist einfach die Anzahl an Hunden pro Hektar Fläche eines Bezirkes."),
+                 p(""),
+                 varSelectInput("point_size", "Variable:", data.frame(c("Hunde_pro_Ha", "Mietpreis")), selected = "Hunde_pro_Ha"),
                  sliderInput("graphics_size", "Size Adjust:", min = 1, 
                              max = 30, value = 15, ticks = T, sep = ""),
                ),
@@ -80,7 +85,7 @@ server <- function(input, output) {
             plot.caption = element_text(color="white"),
             plot.tag = element_text(color="white")
             ) +
-      geom_point(aes(size = Hunde_pro_Ha,  col = SCORE)) +
+      geom_point(aes(size = !!input$point_size,  col = SCORE)) +
       scale_size_continuous(range=c(input$graphics_size/3,input$graphics_size)) +
     
       scale_color_continuous(low="#ff5a47", high='#7bff47') +
