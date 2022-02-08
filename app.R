@@ -1,6 +1,5 @@
 library(bslib)
 library(tidyverse)
-library(thematic)
 library(sf)
 
 CombinedData <- read_csv('data/CombinedData.csv')
@@ -14,9 +13,8 @@ DistrictOutlines <- DistrictOutlines %>%
   ) %>%
   mutate(DISTRICT = CombinedData$DISTRICT[-1])
 
-CombinedData <- CombinedData %>% left_join(DistrictOutlines, by="DISTRICT")
+CombinedDataGeo <- CombinedData %>% left_join(DistrictOutlines, by="DISTRICT")
 
-thematic::thematic_shiny() 
 
 # Define UI for app that draws a histogram ----
 ui <- fluidPage(
@@ -47,8 +45,8 @@ ui <- fluidPage(
                  h3("Warum ist mein Bezirk so beschissen?"),
                  p("Zur näheren Betrachtung der Sachlage kann diese Grafik herangezogen werden:"),
                  p("Auf der X- und Y-Achse befinden sich die beiden Komponenten des berechneten Beschiss-Score, Farbe signalisiert den berechneten Wert. Für die Größe der Punkte ist die Hundedichte eines Bezirkes ausschlaggebend. Die Hundedichte ist einfach die Anzahl an Hunden pro Hektar Fläche eines Bezirkes."),
-                 p(""),
-                 varSelectInput("point_size", "Variable:", data.frame(c("Hunde_pro_Ha", "Mietpreis")), selected = "Hunde_pro_Ha"),
+                 p("Mit dem folenden Menü können andere Variablen zur bestimmung der Punktgröße gewält werden:"),
+                 varSelectInput("point_size", "Variable:", data = CombinedData[,-c(1,10,14)], selected = "Hunde_pro_Ha"),
                  sliderInput("graphics_size", "Size Adjust:", min = 1, 
                              max = 30, value = 15, ticks = T, sep = ""),
                ),
@@ -95,7 +93,7 @@ server <- function(input, output) {
   
   output$map <- renderPlot({
     theme_set(theme_void())
-    ggplot(data = CombinedData[-1,]) +
+    ggplot(data = CombinedDataGeo[-1,]) +
       geom_sf(aes(geometry = geometry, fill = SCORE), color = "black") +
       scale_fill_continuous(low="#ff5a47", high='#7bff47') +
       geom_text(aes(label = paste0(BEZ_RZ, "\n", round(SCORE, digits =2)), x = lon, y = lat), col = "black")
